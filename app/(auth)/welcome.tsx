@@ -1,50 +1,31 @@
 import React from 'react';
 import { View, Text, StyleSheet, TouchableOpacity, Image } from 'react-native';
+import Animated, { FadeInDown, FadeInUp } from 'react-native-reanimated';
 import { Link } from 'expo-router';
 import Colors from '@/constants/Colors';
 
 export default function WelcomeScreen() {
   return (
     <View style={styles.container}>
-      <View style={styles.header}>
+      <Animated.View style={styles.header} entering={FadeInDown.duration(1000)}>
         <Image
-          source={{ uri: 'https://images.pexels.com/photos/6634678/pexels-photo-6634678.jpeg' }}
+          source={{ uri: 'https://images.unsplash.com/photo-1588776814546-ec7d5c9e2f3a' }}
           style={styles.headerImage}
         />
         <View style={styles.overlay} />
         <View style={styles.headerContent}>
-          <Text style={styles.title}>Welcome to Kuda</Text>
+          <Text style={styles.title}>Welcome to Arigo Pay</Text>
           <Text style={styles.subtitle}>
-            Experience banking made simple, fast, and secure
+            Banking redefined – secure, smart, and seamless
           </Text>
         </View>
-      </View>
+      </Animated.View>
 
-      <View style={styles.content}>
+      <Animated.View style={styles.content} entering={FadeInUp.delay(300).duration(1000)}>
         <View style={styles.features}>
-          <View style={styles.featureItem}>
-            <View style={[styles.featureIcon, { backgroundColor: Colors.primaryLight }]}>
-              <Text style={styles.featureEmoji}>💸</Text>
-            </View>
-            <Text style={styles.featureTitle}>Free Transfers</Text>
-            <Text style={styles.featureText}>Send money to anyone, anywhere, anytime</Text>
-          </View>
-
-          <View style={styles.featureItem}>
-            <View style={[styles.featureIcon, { backgroundColor: '#E8F5E9' }]}>
-              <Text style={styles.featureEmoji}>💳</Text>
-            </View>
-            <Text style={styles.featureTitle}>Virtual Cards</Text>
-            <Text style={styles.featureText}>Shop online with secure virtual cards</Text>
-          </View>
-
-          <View style={styles.featureItem}>
-            <View style={[styles.featureIcon, { backgroundColor: '#FFF3E0' }]}>
-              <Text style={styles.featureEmoji}>📊</Text>
-            </View>
-            <Text style={styles.featureTitle}>Budget Tools</Text>
-            <Text style={styles.featureText}>Track and manage your spending easily</Text>
-          </View>
+          <Feature emoji="💼" title="Smart Banking" text="Secure, modern banking at your fingertips" />
+          <Feature emoji="📱" title="Instant Access" text="Sign up and access your account in seconds" />
+          <Feature emoji="🧠" title="Smart Tools" text="Track your money and grow smarter" />
         </View>
 
         <View style={styles.buttons}>
@@ -60,6 +41,20 @@ export default function WelcomeScreen() {
             </TouchableOpacity>
           </Link>
         </View>
+      </Animated.View>
+    </View>
+  );
+}
+
+function Feature({ emoji, title, text }: { emoji: string; title: string; text: string }) {
+  return (
+    <View style={styles.featureItem}>
+      <View style={styles.featureIcon}>
+        <Text style={styles.featureEmoji}>{emoji}</Text>
+      </View>
+      <View style={{ flex: 1 }}>
+        <Text style={styles.featureTitle}>{title}</Text>
+        <Text style={styles.featureText}>{text}</Text>
       </View>
     </View>
   );
@@ -80,7 +75,7 @@ const styles = StyleSheet.create({
   },
   overlay: {
     ...StyleSheet.absoluteFillObject,
-    backgroundColor: 'rgba(0, 0, 0, 0.3)',
+    backgroundColor: 'rgba(0, 72, 255, 0.3)',
   },
   headerContent: {
     position: 'absolute',
@@ -120,6 +115,7 @@ const styles = StyleSheet.create({
     justifyContent: 'center',
     alignItems: 'center',
     marginRight: 16,
+    backgroundColor: '#E3F2FD',
   },
   featureEmoji: {
     fontSize: 24,
@@ -127,21 +123,20 @@ const styles = StyleSheet.create({
   featureTitle: {
     fontFamily: 'Poppins-SemiBold',
     fontSize: 16,
-    color: Colors.textPrimary,
+    color: '#003087',
     marginBottom: 4,
   },
   featureText: {
     fontFamily: 'Poppins-Regular',
     fontSize: 14,
-    color: Colors.textSecondary,
-    flex: 1,
+    color: '#5C6BC0',
   },
   buttons: {
     marginTop: 'auto',
     paddingBottom: 40,
   },
   button: {
-    backgroundColor: Colors.primary,
+    backgroundColor: '#004BFF',
     borderRadius: 12,
     height: 56,
     justifyContent: 'center',
@@ -154,8 +149,8 @@ const styles = StyleSheet.create({
     fontSize: 16,
   },
   buttonOutline: {
-    borderWidth: 1,
-    borderColor: Colors.primary,
+    borderWidth: 1.5,
+    borderColor: '#004BFF',
     borderRadius: 12,
     height: 56,
     justifyContent: 'center',
@@ -163,7 +158,7 @@ const styles = StyleSheet.create({
   },
   buttonOutlineText: {
     fontFamily: 'Poppins-SemiBold',
-    color: Colors.primary,
+    color: '#004BFF',
     fontSize: 16,
   },
 });

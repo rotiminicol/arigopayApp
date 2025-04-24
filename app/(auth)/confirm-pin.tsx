@@ -8,86 +8,68 @@ import {
   Alert,
   Keyboard,
 } from 'react-native';
+import Animated, { FadeInDown, FadeInUp } from 'react-native-reanimated';
 import { router } from 'expo-router';
-import { ChevronLeft, Lock } from 'lucide-react-native';
+import { ChevronLeft, ShieldCheck } from 'lucide-react-native';
 import { useAuth } from '@/context/AuthContext';
 import Colors from '@/constants/Colors';
 
 export default function ConfirmPinScreen() {
-  const [pin, setPin] = useState('');
-  const { verifyPin } = useAuth();
-  
-  const pinInputRef = useRef<TextInput>(null);
+  const [confirmPin, setConfirmPin] = useState('');
+  const inputRef = useRef<TextInput>(null);
+  const { confirmPin: submitConfirmPin } = useAuth();
 
-  const handlePinComplete = async () => {
-    if (pin.length === 4) {
+  const handlePinSubmit = async () => {
+    if (confirmPin.length === 4) {
       try {
-        const isValid = await verifyPin(pin);
-        if (isValid) {
-          router.replace('/(app)'); // Or your success route
-        } else {
-          Alert.alert('Error', 'Invalid PIN. Please try again.');
-          setPin('');
-          pinInputRef.current?.focus();
-        }
-      } catch (error) {
-        Alert.alert('Error', 'Failed to verify PIN. Please try again.');
-        setPin('');
-        pinInputRef.current?.focus();
+        await submitConfirmPin(confirmPin);
+        router.replace('/(app)');
+      } catch {
+        Alert.alert('Error', 'Failed to confirm PIN. Try again.');
+        setConfirmPin('');
+        setTimeout(() => inputRef.current?.focus(), 100);
       }
     }
   };
 
-  const renderPinDigits = (value: string) => {
-    const digits = [];
-    for (let i = 0; i < 4; i++) {
-      digits.push(
-        <View
-          key={i}
-          style={[
-            styles.pinDigit,
-            value.length > i && styles.pinDigitFilled
-          ]}
-        />
-      );
-    }
-    return digits;
-  };
+  const renderDots = () =>
+    [...Array(4)].map((_, i) => (
+      <View
+        key={i}
+        style={[
+          styles.dot,
+          confirmPin.length > i && styles.dotFilled,
+        ]}
+      />
+    ));
 
   return (
     <View style={styles.container}>
-      <TouchableOpacity 
+      <TouchableOpacity
         style={styles.backButton}
         onPress={() => router.back()}
       >
-        <ChevronLeft size={24} color={Colors.textPrimary} />
+        <ChevronLeft size={24} color={Colors.primary} />
       </TouchableOpacity>
 
-      <View style={styles.content}>
-        <Lock size={48} color={Colors.primary} style={styles.icon} />
-        
-        <Text style={styles.title}>
-          Enter Your Transaction PIN
-        </Text>
-        
-        <Text style={styles.description}>
-          Enter your 4-digit PIN to authorize this action
-        </Text>
+      <Animated.View entering={FadeInDown} style={styles.content}>
+      <ShieldCheck size={50} color={Colors.primary} style={styles.icon} />
+        <Text style={styles.title}>Confirm PIN</Text>
+        <Text style={styles.sub}>Re-enter your 4-digit PIN to continue</Text>
 
-        <View style={styles.pinContainer}>
-          {renderPinDigits(pin)}
-          
-          {/* Hidden input for PIN */}
+        <Animated.View entering={FadeInUp.delay(100)} style={styles.dotsRow}>
+          {renderDots()}
+
           <TextInput
-            ref={pinInputRef}
+            ref={inputRef}
             style={styles.hiddenInput}
-            value={pin}
+            value={confirmPin}
             onChangeText={(text) => {
-              const numericText = text.replace(/[^0-9]/g, '');
-              if (numericText.length <= 4) {
-                setPin(numericText);
-                if (numericText.length === 4) {
-                  handlePinComplete();
+              const digits = text.replace(/[^0-9]/g, '');
+              if (digits.length <= 4) {
+                setConfirmPin(digits);
+                if (digits.length === 4) {
+                  handlePinSubmit();
                   Keyboard.dismiss();
                 }
               }
@@ -95,16 +77,17 @@ export default function ConfirmPinScreen() {
             keyboardType="numeric"
             maxLength={4}
             secureTextEntry
-            autoFocus={true}
+            autoFocus
           />
-        </View>
+        </Animated.View>
 
-        <View style={styles.footer}>
-          <Text style={styles.footerText}>
-            Forgot your PIN? <Text style={styles.footerLink}>Reset it</Text>
-          </Text>
-        </View>
-      </View>
+        <TouchableOpacity
+          onPress={() => inputRef.current?.focus()}
+          style={styles.keypadBtn}
+        >
+          <Text style={styles.keypadText}>Tap to Enter PIN</Text>
+        </TouchableOpacity>
+      </Animated.View>
     </View>
   );
 }
@@ -112,74 +95,65 @@ export default function ConfirmPinScreen() {
 const styles = StyleSheet.create({
   container: {
     flex: 1,
-    backgroundColor: 'white',
+    backgroundColor: '#F9FAFB',
     padding: 20,
   },
   backButton: {
-    marginTop: 40,
+    marginTop: 50,
     marginBottom: 20,
   },
   content: {
-    flex: 1,
     alignItems: 'center',
     justifyContent: 'center',
+    flex: 1,
   },
   icon: {
-    marginBottom: 24,
+    marginBottom: 20,
   },
   title: {
-    fontFamily: 'Poppins-SemiBold',
     fontSize: 24,
-    color: Colors.textPrimary,
-    marginBottom: 12,
-    textAlign: 'center',
+    fontWeight: '700',
+    color: Colors.primary,
+    marginBottom: 10,
   },
-  description: {
-    fontFamily: 'Poppins-Regular',
+  sub: {
     fontSize: 16,
-    color: Colors.textSecondary,
+    color: '#6B7280',
     marginBottom: 40,
     textAlign: 'center',
   },
-  pinContainer: {
+  dotsRow: {
     flexDirection: 'row',
-    justifyContent: 'center',
     marginBottom: 40,
+    gap: 20,
   },
-  pinDigit: {
+  dot: {
     width: 20,
     height: 20,
     borderRadius: 10,
-    backgroundColor: Colors.background,
+    borderColor: '#CBD5E1',
     borderWidth: 1,
-    borderColor: Colors.border,
-    marginHorizontal: 10,
+    backgroundColor: '#E2E8F0',
   },
-  pinDigitFilled: {
+  dotFilled: {
     backgroundColor: Colors.primary,
     borderColor: Colors.primary,
   },
   hiddenInput: {
     position: 'absolute',
+    width: 1,
+    height: 1,
     opacity: 0,
-    height: 0,
-    width: 0,
   },
-  footer: {
-    position: 'absolute',
-    bottom: 40,
-    left: 0,
-    right: 0,
-    alignItems: 'center',
+  keypadBtn: {
+    backgroundColor: '#E0F2FE',
+    paddingVertical: 12,
+    paddingHorizontal: 24,
+    borderRadius: 8,
   },
-  footerText: {
-    fontFamily: 'Poppins-Regular',
-    fontSize: 14,
-    color: Colors.textSecondary,
-    textAlign: 'center',
-  },
-  footerLink: {
+  keypadText: {
     color: Colors.primary,
-    fontFamily: 'Poppins-SemiBold',
+    fontWeight: '600',
+    fontSize: 16,
   },
 });

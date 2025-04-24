@@ -4,17 +4,28 @@ import {
   Text,
   TextInput,
   TouchableOpacity,
-  StyleSheet,
-  Alert,
   Platform,
   KeyboardAvoidingView,
   ScrollView,
   ActivityIndicator,
+  Alert,
 } from 'react-native';
 import { Link } from 'expo-router';
 import { Fingerprint, Eye, EyeOff, User, Lock } from 'lucide-react-native';
 import { useAuth } from '@/context/AuthContext';
-import Colors from '@/constants/Colors';
+import tw from 'twrnc';
+import * as Animatable from 'react-native-animatable';
+import Animated, { useSharedValue, useAnimatedStyle, withSpring } from 'react-native-reanimated';
+
+const Colors = {
+  primary: '#1E3A8A', // Deep navy blue
+  accent: '#3B82F6', // Bright blue
+  background: '#FFFFFF',
+  secondary: '#F5F7FA',
+  textPrimary: '#111827',
+  textSecondary: '#6B7280',
+  border: '#D1D5DB',
+};
 
 export default function LoginScreen() {
   const [email, setEmail] = useState('');
@@ -23,6 +34,12 @@ export default function LoginScreen() {
   const [loading, setLoading] = useState(false);
   const { signIn, biometricAuth, isBiometricSupported, isBiometricEnabled } = useAuth();
 
+  // Animation for button press
+  const buttonScale = useSharedValue(1);
+  const animatedButtonStyle = useAnimatedStyle(() => ({
+    transform: [{ scale: buttonScale.value }],
+  }));
+
   const handleLogin = async () => {
     if (!email || !password) {
       Alert.alert('Error', 'Please enter both email and password');
@@ -30,6 +47,9 @@ export default function LoginScreen() {
     }
 
     setLoading(true);
+    buttonScale.value = withSpring(0.95, {}, () => {
+      buttonScale.value = withSpring(1);
+    });
     try {
       await signIn(email, password);
     } catch (error) {
@@ -44,8 +64,6 @@ export default function LoginScreen() {
 
     const authenticated = await biometricAuth();
     if (authenticated) {
-      // In a real app, we would need to retrieve the stored credentials
-      // and then call signIn with those credentials
       setEmail('demo@example.com');
       setPassword('password');
       await signIn('demo@example.com', 'password');
@@ -53,7 +71,6 @@ export default function LoginScreen() {
   };
 
   useEffect(() => {
-    // Try biometric auth on component mount if enabled
     if (isBiometricEnabled) {
       handleBiometricAuth();
     }
@@ -61,42 +78,66 @@ export default function LoginScreen() {
 
   return (
     <KeyboardAvoidingView
-      style={{ flex: 1 }}
+      style={tw`flex-1 bg-[${Colors.background}]`}
       behavior={Platform.OS === 'ios' ? 'padding' : 'height'}
     >
-      <ScrollView contentContainerStyle={styles.container}>
-        <View style={styles.header}>
-          <Text style={styles.logo}>Kuda Bank</Text>
-          <Text style={styles.subtitle}>Banking for the free</Text>
-        </View>
+      <ScrollView contentContainerStyle={tw`flex-grow justify-center p-6`}>
+        {/* Header with Logo and Tagline */}
+        <Animatable.View
+          animation="fadeInDown"
+          duration={1000}
+          style={tw`items-center mb-10`}
+        >
+          <Text style={tw`text-4xl font-bold text-[${Colors.primary}]`}>
+            Arigo Pay
+          </Text>
+          <Text style={tw`text-base text-[${Colors.textSecondary}] mt-2`}>
+            Secure Banking, Simplified
+          </Text>
+        </Animatable.View>
 
-        <View style={styles.form}>
-          <Text style={styles.title}>Login</Text>
-          
-          <View style={styles.inputContainer}>
-            <User size={20} color={Colors.textSecondary} style={styles.inputIcon} />
+        {/* Form */}
+        <Animatable.View animation="fadeInUp" duration={1200} style={tw`w-full`}>
+          <Text style={tw`text-2xl font-semibold text-[${Colors.textPrimary}] mb-6`}>
+            Welcome Back
+          </Text>
+
+          {/* Email Input */}
+          <Animatable.View
+            animation="slideInLeft"
+            duration={1400}
+            style={tw`flex-row items-center mb-4 border border-[${Colors.border}] rounded-xl bg-[${Colors.secondary}] p-4`}
+          >
+            <User size={20} color={Colors.textSecondary} style={tw`mr-3`} />
             <TextInput
-              style={styles.input}
+              style={tw`flex-1 text-base text-[${Colors.textPrimary}] font-medium`}
               placeholder="Email or Phone"
+              placeholderTextColor={Colors.textSecondary}
               value={email}
               onChangeText={setEmail}
               keyboardType="email-address"
               autoCapitalize="none"
             />
-          </View>
+          </Animatable.View>
 
-          <View style={styles.inputContainer}>
-            <Lock size={20} color={Colors.textSecondary} style={styles.inputIcon} />
+          {/* Password Input */}
+          <Animatable.View
+            animation="slideInLeft"
+            duration={1600}
+            style={tw`flex-row items-center mb-4 border border-[${Colors.border}] rounded-xl bg-[${Colors.secondary}] p-4`}
+          >
+            <Lock size={20} color={Colors.textSecondary} style={tw`mr-3`} />
             <TextInput
-              style={styles.input}
+              style={tw`flex-1 text-base text-[${Colors.textPrimary}] font-medium`}
               placeholder="Password"
+              placeholderTextColor={Colors.textSecondary}
               value={password}
               onChangeText={setPassword}
               secureTextEntry={!showPassword}
             />
             <TouchableOpacity
-              style={styles.eyeIcon}
               onPress={() => setShowPassword(!showPassword)}
+              style={tw`p-2`}
             >
               {showPassword ? (
                 <EyeOff size={20} color={Colors.textSecondary} />
@@ -104,156 +145,75 @@ export default function LoginScreen() {
                 <Eye size={20} color={Colors.textSecondary} />
               )}
             </TouchableOpacity>
-          </View>
+          </Animatable.View>
 
-          <TouchableOpacity style={styles.forgotPassword}>
-            <Text style={styles.forgotPasswordText}>Forgot Password?</Text>
-          </TouchableOpacity>
-
-          <TouchableOpacity
-            style={[styles.button, loading && styles.buttonDisabled]}
-            onPress={handleLogin}
-            disabled={loading}
-          >
-            {loading ? (
-              <ActivityIndicator color="white" />
-            ) : (
-              <Text style={styles.buttonText}>LOGIN</Text>
-            )}
-          </TouchableOpacity>
-
-          {isBiometricSupported && isBiometricEnabled && (
-            <TouchableOpacity
-              style={styles.biometricButton}
-              onPress={handleBiometricAuth}
-            >
-              <Fingerprint size={24} color={Colors.primary} />
-              <Text style={styles.biometricText}>Login with Biometrics</Text>
+          {/* Forgot Password */}
+          <Animatable.View animation="fadeIn" duration={1800}>
+            <TouchableOpacity style={tw`self-end mb-6`}>
+              <Text style={tw`text-sm font-medium text-[${Colors.accent}]`}>
+                Forgot Password?
+              </Text>
             </TouchableOpacity>
+          </Animatable.View>
+
+          {/* Login Button */}
+          <Animatable.View animation="bounceIn" duration={2000}>
+            <Animated.View style={[animatedButtonStyle]}>
+              <TouchableOpacity
+                style={tw`bg-[${Colors.primary}] rounded-xl h-14 justify-center items-center mb-4 shadow-lg`}
+                onPress={handleLogin}
+                disabled={loading}
+              >
+                {loading ? (
+                  <ActivityIndicator color="white" />
+                ) : (
+                  <Text style={tw`text-white text-lg font-semibold`}>
+                    LOGIN
+                  </Text>
+                )}
+              </TouchableOpacity>
+            </Animated.View>
+          </Animatable.View>
+
+          {/* Biometric Button */}
+          {isBiometricSupported && isBiometricEnabled && (
+            <Animatable.View
+              animation="pulse"
+              iterationCount="infinite"
+              duration={2000}
+              style={tw`flex-row justify-center items-center mt-4 p-3 border border-[${Colors.border}] rounded-xl bg-[${Colors.secondary}]`}
+            >
+              <TouchableOpacity
+                onPress={handleBiometricAuth}
+                style={tw`flex-row items-center`}
+              >
+                <Fingerprint size={24} color={Colors.accent} />
+                <Text style={tw`text-[${Colors.accent}] font-medium ml-2 text-sm`}>
+                  Login with Biometrics
+                </Text>
+              </TouchableOpacity>
+            </Animatable.View>
           )}
 
-          <View style={styles.footer}>
-            <Text style={styles.footerText}>Don't have an account?</Text>
+          {/* Footer */}
+          <Animatable.View
+            animation="fadeIn"
+            duration={2200}
+            style={tw`flex-row justify-center mt-8`}
+          >
+            <Text style={tw`text-sm text-[${Colors.textSecondary}]`}>
+              Don't have an account?{' '}
+            </Text>
             <Link href="/(auth)/signup" asChild>
               <TouchableOpacity>
-                <Text style={styles.signupLink}>Sign Up</Text>
+                <Text style={tw`text-sm font-semibold text-[${Colors.accent}]`}>
+                  Sign Up
+                </Text>
               </TouchableOpacity>
             </Link>
-          </View>
-        </View>
+          </Animatable.View>
+        </Animatable.View>
       </ScrollView>
     </KeyboardAvoidingView>
   );
 }
-
-const styles = StyleSheet.create({
-  container: {
-    flexGrow: 1,
-    justifyContent: 'center',
-    padding: 20,
-    backgroundColor: 'white',
-  },
-  header: {
-    alignItems: 'center',
-    marginBottom: 40,
-  },
-  logo: {
-    fontFamily: 'Poppins-Bold',
-    fontSize: 32,
-    color: Colors.primary,
-  },
-  subtitle: {
-    fontFamily: 'Poppins-Regular',
-    fontSize: 14,
-    color: Colors.textSecondary,
-  },
-  form: {
-    width: '100%',
-  },
-  title: {
-    fontFamily: 'Poppins-SemiBold',
-    fontSize: 24,
-    color: Colors.textPrimary,
-    marginBottom: 20,
-  },
-  inputContainer: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    marginBottom: 16,
-    borderWidth: 1,
-    borderColor: Colors.border,
-    borderRadius: 8,
-    paddingHorizontal: 12,
-    height: 56,
-  },
-  inputIcon: {
-    marginRight: 10,
-  },
-  input: {
-    flex: 1,
-    height: '100%',
-    fontFamily: 'Poppins-Regular',
-    fontSize: 14,
-    color: Colors.textPrimary,
-  },
-  eyeIcon: {
-    padding: 10,
-  },
-  forgotPassword: {
-    alignSelf: 'flex-end',
-    marginBottom: 20,
-  },
-  forgotPasswordText: {
-    fontFamily: 'Poppins-Medium',
-    color: Colors.primary,
-    fontSize: 14,
-  },
-  button: {
-    backgroundColor: Colors.primary,
-    borderRadius: 8,
-    height: 56,
-    justifyContent: 'center',
-    alignItems: 'center',
-    marginBottom: 16,
-  },
-  buttonDisabled: {
-    backgroundColor: Colors.primaryLight,
-  },
-  buttonText: {
-    fontFamily: 'Poppins-SemiBold',
-    color: 'white',
-    fontSize: 16,
-  },
-  biometricButton: {
-    flexDirection: 'row',
-    justifyContent: 'center',
-    alignItems: 'center',
-    marginVertical: 16,
-    padding: 12,
-    borderWidth: 1,
-    borderColor: Colors.border,
-    borderRadius: 8,
-  },
-  biometricText: {
-    fontFamily: 'Poppins-Medium',
-    color: Colors.primary,
-    marginLeft: 10,
-    fontSize: 14,
-  },
-  footer: {
-    flexDirection: 'row',
-    justifyContent: 'center',
-    marginTop: 20,
-  },
-  footerText: {
-    fontFamily: 'Poppins-Regular',
-    color: Colors.textSecondary,
-    fontSize: 14,
-  },
-  signupLink: {
-    fontFamily: 'Poppins-SemiBold',
-    color: Colors.primary,
-    marginLeft: 5,
-    fontSize: 14,
-  },
-});

@@ -12,6 +12,7 @@ interface AuthContextType {
   signUp: (email: string, password: string, phone: string) => Promise<void>;
   signOut: () => Promise<void>;
   createPin: (pin: string) => Promise<void>;
+  confirmPin: (pin: string) => Promise<void>;
   verifyPin: (pin: string) => Promise<boolean>;
   isBiometricSupported: boolean;
   biometricAuth: () => Promise<boolean>;
@@ -27,6 +28,7 @@ const AuthContext = createContext<AuthContextType>({
   signUp: async () => {},
   signOut: async () => {},
   createPin: async () => {},
+  confirmPin: async () => {},
   verifyPin: async () => false,
   isBiometricSupported: false,
   biometricAuth: async () => false,
@@ -190,6 +192,18 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
     }
   };
 
+    // Confirm transaction PIN
+    const confirmPin = async (pin: string) => {
+      try {
+        await storage.setItem('transactionPin', pin);
+        router.replace('/(app)');
+      } catch (e) {
+        console.error('Error creating PIN:', e);
+        throw e;
+      }
+    };
+  
+
   // Verify transaction PIN
   const verifyPin = async (pin: string) => {
     try {
@@ -238,6 +252,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
       signUp,
       signOut,
       createPin,
+      confirmPin,
       verifyPin,
       isBiometricSupported,
       biometricAuth,

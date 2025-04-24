@@ -8,6 +8,7 @@ import {
   Alert,
   Keyboard,
 } from 'react-native';
+import Animated, { FadeInDown, FadeInUp } from 'react-native-reanimated';
 import { router } from 'expo-router';
 import { ChevronLeft, Lock } from 'lucide-react-native';
 import { useAuth } from '@/context/AuthContext';
@@ -18,7 +19,7 @@ export default function CreatePinScreen() {
   const [confirmPin, setConfirmPin] = useState('');
   const [step, setStep] = useState(1);
   const { createPin } = useAuth();
-  
+
   const pinInputRef = useRef<TextInput>(null);
   const confirmPinInputRef = useRef<TextInput>(null);
 
@@ -36,86 +37,71 @@ export default function CreatePinScreen() {
       if (pin === confirmPin) {
         try {
           await createPin(pin);
-        } catch (error) {
+          router.replace('/(app)');
+        } catch {
           Alert.alert('Error', 'Failed to set PIN. Please try again.');
         }
       } else {
-        Alert.alert('Error', 'PINs do not match. Please try again.');
+        Alert.alert('Error', 'PINs do not match.');
         setPin('');
         setConfirmPin('');
         setStep(1);
-        setTimeout(() => {
-          pinInputRef.current?.focus();
-        }, 100);
+        setTimeout(() => pinInputRef.current?.focus(), 100);
       }
     }
   };
 
-  const renderPinDigits = (value: string) => {
-    const digits = [];
-    for (let i = 0; i < 4; i++) {
-      digits.push(
-        <View
-          key={i}
-          style={[
-            styles.pinDigit,
-            value.length > i && styles.pinDigitFilled
-          ]}
-        />
-      );
-    }
-    return digits;
-  };
+  const renderPinDots = (value: string) =>
+    [...Array(4)].map((_, i) => (
+      <View
+        key={i}
+        style={[
+          styles.dot,
+          value.length > i && styles.dotFilled,
+        ]}
+      />
+    ));
 
   return (
     <View style={styles.container}>
-      <TouchableOpacity 
+      <TouchableOpacity
         style={styles.backButton}
         onPress={() => {
           if (step === 2) {
             setStep(1);
             setConfirmPin('');
-            setTimeout(() => {
-              pinInputRef.current?.focus();
-            }, 100);
+            setTimeout(() => pinInputRef.current?.focus(), 100);
           } else {
             router.replace('/(auth)/signup');
           }
         }}
       >
-        <ChevronLeft size={24} color={Colors.textPrimary} />
+        <ChevronLeft size={24} color={Colors.primary} />
       </TouchableOpacity>
 
-      <View style={styles.content}>
-        <Lock size={48} color={Colors.primary} style={styles.icon} />
-        
+      <Animated.View entering={FadeInDown} style={styles.content}>
+        <Lock size={50} color={Colors.primary} style={styles.icon} />
         <Text style={styles.title}>
-          {step === 1 ? 'Create Transaction PIN' : 'Confirm Transaction PIN'}
+          {step === 1 ? 'Create Transaction PIN' : 'Confirm PIN'}
         </Text>
-        
-        <Text style={styles.description}>
-          {step === 1 
-            ? 'Create a 4-digit PIN to secure your transactions' 
-            : 'Please re-enter your PIN to confirm'
-          }
+        <Text style={styles.sub}>
+          {step === 1
+            ? 'Secure your wallet with a 4-digit PIN'
+            : 'Re-enter your PIN to confirm'}
         </Text>
 
-        <View style={styles.pinContainer}>
-          {step === 1 
-            ? renderPinDigits(pin)
-            : renderPinDigits(confirmPin)
-          }
-          
-          {/* Hidden input for PIN */}
+        <Animated.View entering={FadeInUp.delay(100)} style={styles.dotsRow}>
+          {renderPinDots(step === 1 ? pin : confirmPin)}
+
           <TextInput
             ref={pinInputRef}
             style={styles.hiddenInput}
             value={pin}
             onChangeText={(text) => {
-              const numericText = text.replace(/[^0-9]/g, '');
-              if (numericText.length <= 4) {
-                setPin(numericText);
-                if (numericText.length === 4) {
+              const digits = text.replace(/[^0-9]/g, '');
+              if (digits.length <= 4) {
+                setPin(digits);
+                if (digits.length === 4) {
                   handlePinComplete();
                   Keyboard.dismiss();
                 }
@@ -126,17 +112,16 @@ export default function CreatePinScreen() {
             secureTextEntry
             autoFocus={step === 1}
           />
-          
-          {/* Hidden input for Confirm PIN */}
+
           <TextInput
             ref={confirmPinInputRef}
             style={styles.hiddenInput}
             value={confirmPin}
             onChangeText={(text) => {
-              const numericText = text.replace(/[^0-9]/g, '');
-              if (numericText.length <= 4) {
-                setConfirmPin(numericText);
-                if (numericText.length === 4) {
+              const digits = text.replace(/[^0-9]/g, '');
+              if (digits.length <= 4) {
+                setConfirmPin(digits);
+                if (digits.length === 4) {
                   handleConfirmPin();
                   Keyboard.dismiss();
                 }
@@ -147,27 +132,19 @@ export default function CreatePinScreen() {
             secureTextEntry
             autoFocus={step === 2}
           />
-        </View>
+        </Animated.View>
 
-        <TouchableOpacity 
-          style={styles.keyboardButton}
-          onPress={() => {
-            if (step === 1) {
-              pinInputRef.current?.focus();
-            } else {
-              confirmPinInputRef.current?.focus();
-            }
-          }}
+        <TouchableOpacity
+          onPress={() =>
+            step === 1
+              ? pinInputRef.current?.focus()
+              : confirmPinInputRef.current?.focus()
+          }
+          style={styles.keypadBtn}
         >
-          <Text style={styles.keyboardButtonText}>Open Keypad</Text>
+          <Text style={styles.keypadText}>Tap to Enter PIN</Text>
         </TouchableOpacity>
-
-        <View style={styles.footer}>
-          <Text style={styles.footerText}>
-            This PIN will be used to authorize all transactions
-          </Text>
-        </View>
-      </View>
+      </Animated.View>
     </View>
   );
 }
@@ -175,81 +152,65 @@ export default function CreatePinScreen() {
 const styles = StyleSheet.create({
   container: {
     flex: 1,
-    backgroundColor: 'white',
+    backgroundColor: '#F9FAFB',
     padding: 20,
   },
   backButton: {
-    marginTop: 40,
+    marginTop: 50,
     marginBottom: 20,
   },
   content: {
-    flex: 1,
     alignItems: 'center',
     justifyContent: 'center',
+    flex: 1,
   },
   icon: {
-    marginBottom: 24,
+    marginBottom: 20,
   },
   title: {
-    fontFamily: 'Poppins-SemiBold',
     fontSize: 24,
-    color: Colors.textPrimary,
-    marginBottom: 12,
-    textAlign: 'center',
+    fontWeight: '700',
+    color: Colors.primary,
+    marginBottom: 10,
   },
-  description: {
-    fontFamily: 'Poppins-Regular',
+  sub: {
     fontSize: 16,
-    color: Colors.textSecondary,
+    color: '#6B7280',
     marginBottom: 40,
     textAlign: 'center',
   },
-  pinContainer: {
+  dotsRow: {
     flexDirection: 'row',
-    justifyContent: 'center',
     marginBottom: 40,
+    gap: 20,
   },
-  pinDigit: {
+  dot: {
     width: 20,
     height: 20,
     borderRadius: 10,
-    backgroundColor: Colors.background,
+    borderColor: '#CBD5E1',
     borderWidth: 1,
-    borderColor: Colors.border,
-    marginHorizontal: 10,
+    backgroundColor: '#E2E8F0',
   },
-  pinDigitFilled: {
+  dotFilled: {
     backgroundColor: Colors.primary,
     borderColor: Colors.primary,
   },
   hiddenInput: {
     position: 'absolute',
+    width: 1,
+    height: 1,
     opacity: 0,
-    height: 0,
-    width: 0,
   },
-  keyboardButton: {
-    backgroundColor: Colors.primaryLight,
+  keypadBtn: {
+    backgroundColor: '#E0F2FE',
     paddingVertical: 12,
     paddingHorizontal: 24,
     borderRadius: 8,
   },
-  keyboardButtonText: {
-    fontFamily: 'Poppins-Medium',
+  keypadText: {
     color: Colors.primary,
+    fontWeight: '600',
     fontSize: 16,
-  },
-  footer: {
-    position: 'absolute',
-    bottom: 40,
-    left: 0,
-    right: 0,
-    alignItems: 'center',
-  },
-  footerText: {
-    fontFamily: 'Poppins-Regular',
-    fontSize: 14,
-    color: Colors.textSecondary,
-    textAlign: 'center',
   },
 });

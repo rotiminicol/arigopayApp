@@ -1,11 +1,78 @@
-import React from 'react';
-import { View, Text, StyleSheet, ScrollView, TouchableOpacity } from 'react-native';
-import { User, Settings, Shield, Gift, CircleHelp as HelpCircle, ChevronRight, Bell, Share2, FileText, MessageSquare } from 'lucide-react-native';
+import React, { useEffect, useRef } from 'react';
+import {
+  View,
+  Text,
+  StyleSheet,
+  ScrollView,
+  TouchableOpacity,
+  Animated,
+  Easing,
+} from 'react-native';
+import {
+  User,
+  Settings,
+  Shield,
+  Gift,
+  CircleHelp as HelpCircle,
+  ChevronRight,
+  Bell,
+  Share2,
+  FileText,
+  MessageSquare,
+  LogOut,
+} from 'lucide-react-native';
 import { useAuth } from '@/context/AuthContext';
 import Colors from '@/constants/Colors';
+import * as Haptics from 'expo-haptics';
 
 export default function MoreScreen() {
   const { user, signOut } = useAuth();
+
+  const fadeAnim = useRef(new Animated.Value(0)).current;
+  const translateYAnim = useRef(new Animated.Value(30)).current;
+  const scaleAnim = useRef(new Animated.Value(1)).current;
+  const titleAnim = useRef(new Animated.Value(-50)).current;
+
+  useEffect(() => {
+    Animated.parallel([
+      Animated.timing(fadeAnim, {
+        toValue: 1,
+        duration: 500,
+        useNativeDriver: true,
+      }),
+      Animated.timing(translateYAnim, {
+        toValue: 0,
+        duration: 700,
+        easing: Easing.out(Easing.exp),
+        useNativeDriver: true,
+      }),
+      Animated.timing(titleAnim, {
+        toValue: 0,
+        duration: 600,
+        delay: 100,
+        useNativeDriver: true,
+      }),
+    ]).start();
+  }, []);
+
+  const handlePress = () => {
+    Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
+    Animated.sequence([
+      Animated.spring(scaleAnim, {
+        toValue: 0.96,
+        useNativeDriver: true,
+      }),
+      Animated.spring(scaleAnim, {
+        toValue: 1,
+        useNativeDriver: true,
+      }),
+    ]).start();
+  };
+
+  const handleSignOut = () => {
+    Haptics.notificationAsync(Haptics.NotificationFeedbackType.Warning);
+    signOut();
+  };
 
   const MENU_SECTIONS = [
     {
@@ -34,54 +101,98 @@ export default function MoreScreen() {
   ];
 
   return (
-    <ScrollView style={styles.container}>
-      <View style={styles.header}>
+    <Animated.ScrollView
+      style={[styles.container, { opacity: fadeAnim }]}
+      contentContainerStyle={styles.scrollContent}
+    >
+      <Animated.View
+        style={[
+          styles.header,
+          { transform: [{ translateY: titleAnim }] },
+        ]}
+      >
         <Text style={styles.headerTitle}>More</Text>
-      </View>
+      </Animated.View>
 
-      <View style={styles.profileCard}>
+      <Animated.View
+        style={[
+          styles.profileCard,
+          {
+            transform: [{ translateY: translateYAnim }],
+            opacity: fadeAnim,
+          },
+        ]}
+      >
         <View style={styles.profileAvatar}>
-          <Text style={styles.profileInitial}>{user?.name?.charAt(0) || 'U'}</Text>
+          <Text style={styles.profileInitial}>
+            {user?.name?.charAt(0)?.toUpperCase() || 'U'}
+          </Text>
         </View>
         <View style={styles.profileInfo}>
           <Text style={styles.profileName}>{user?.name || 'User'}</Text>
-          <Text style={styles.profileEmail}>{user?.email || 'user@example.com'}</Text>
+          <Text style={styles.profileEmail}>
+            {user?.email || 'user@example.com'}
+          </Text>
         </View>
-        <TouchableOpacity style={styles.profileButton}>
+        <TouchableOpacity
+          onPress={handlePress}
+          activeOpacity={0.8}
+          style={styles.profileButton}
+        >
           <Text style={styles.profileButtonText}>View Profile</Text>
         </TouchableOpacity>
-      </View>
+      </Animated.View>
 
       {MENU_SECTIONS.map((section, index) => (
-        <View key={index} style={styles.section}>
+        <Animated.View
+          key={index}
+          style={[
+            styles.section,
+            {
+              transform: [{ translateY: translateYAnim }],
+              opacity: fadeAnim,
+            },
+          ]}
+        >
           <Text style={styles.sectionTitle}>{section.title}</Text>
           <View style={styles.menuContainer}>
-            {section.items.map((item, itemIndex) => {
+            {section.items.map((item, i) => {
               const Icon = item.icon;
               return (
-                <TouchableOpacity key={itemIndex} style={styles.menuItem}>
-                  <View style={styles.menuItemLeft}>
-                    <View style={styles.menuItemIcon}>
-                      <Icon size={20} color={Colors.primary} />
+                <Animated.View key={i} style={{ transform: [{ scale: scaleAnim }] }}>
+                  <TouchableOpacity
+                    style={styles.menuItem}
+                    onPress={handlePress}
+                    activeOpacity={0.7}
+                  >
+                    <View style={styles.menuItemLeft}>
+                      <View style={styles.menuItemIcon}>
+                        <Icon size={20} color={Colors.primary} />
+                      </View>
+                      <Text style={styles.menuItemTitle}>{item.title}</Text>
                     </View>
-                    <Text style={styles.menuItemTitle}>{item.title}</Text>
-                  </View>
-                  <ChevronRight size={20} color={Colors.textSecondary} />
-                </TouchableOpacity>
+                    <ChevronRight size={20} color={Colors.textSecondary} />
+                  </TouchableOpacity>
+                </Animated.View>
               );
             })}
           </View>
-        </View>
+        </Animated.View>
       ))}
 
-      <TouchableOpacity style={styles.signOutButton} onPress={signOut}>
+      <TouchableOpacity
+        style={styles.signOutButton}
+        onPress={handleSignOut}
+        activeOpacity={0.8}
+      >
+        <LogOut size={20} color={Colors.danger} style={styles.signOutIcon} />
         <Text style={styles.signOutText}>Sign Out</Text>
       </TouchableOpacity>
 
       <View style={styles.footer}>
-        <Text style={styles.version}>Version 1.0.0</Text>
+        <Text style={styles.version}>Arigo Pay v1.0.0</Text>
       </View>
-    </ScrollView>
+    </Animated.ScrollView>
   );
 }
 
@@ -90,42 +201,55 @@ const styles = StyleSheet.create({
     flex: 1,
     backgroundColor: Colors.background,
   },
+  scrollContent: {
+    paddingBottom: 40,
+  },
   header: {
-    backgroundColor: 'white',
+    backgroundColor: Colors.primary,
     paddingTop: 60,
-    paddingBottom: 20,
-    paddingHorizontal: 20,
+    paddingBottom: 30,
+    paddingHorizontal: 24,
+    borderBottomLeftRadius: 24,
+    borderBottomRightRadius: 24,
+    shadowColor: Colors.primary,
+    shadowOffset: { width: 0, height: 10 },
+    shadowOpacity: 0.1,
+    shadowRadius: 20,
+    elevation: 10,
   },
   headerTitle: {
-    fontFamily: 'Poppins-SemiBold',
-    fontSize: 24,
-    color: Colors.textPrimary,
+    fontFamily: 'Poppins-Bold',
+    fontSize: 28,
+    color: 'white',
+    letterSpacing: 0.5,
   },
   profileCard: {
     backgroundColor: 'white',
-    marginTop: 20,
-    marginHorizontal: 20,
-    padding: 20,
-    borderRadius: 12,
+    marginTop: -40,
+    marginHorizontal: 24,
+    padding: 24,
+    borderRadius: 20,
     flexDirection: 'row',
     alignItems: 'center',
+    elevation: 4,
     shadowColor: '#000',
-    shadowOffset: { width: 0, height: 2 },
+    shadowOffset: { width: 0, height: 10 },
     shadowOpacity: 0.05,
-    shadowRadius: 8,
-    elevation: 2,
+    shadowRadius: 20,
   },
   profileAvatar: {
-    width: 50,
-    height: 50,
-    borderRadius: 25,
+    width: 60,
+    height: 60,
+    borderRadius: 30,
     backgroundColor: Colors.primaryLight,
     justifyContent: 'center',
     alignItems: 'center',
+    borderWidth: 2,
+    borderColor: Colors.primary,
   },
   profileInitial: {
-    fontFamily: 'Poppins-SemiBold',
-    fontSize: 20,
+    fontFamily: 'Poppins-Bold',
+    fontSize: 24,
     color: Colors.primary,
   },
   profileInfo: {
@@ -134,8 +258,9 @@ const styles = StyleSheet.create({
   },
   profileName: {
     fontFamily: 'Poppins-SemiBold',
-    fontSize: 16,
+    fontSize: 18,
     color: Colors.textPrimary,
+    marginBottom: 4,
   },
   profileEmail: {
     fontFamily: 'Poppins-Regular',
@@ -145,39 +270,37 @@ const styles = StyleSheet.create({
   profileButton: {
     backgroundColor: Colors.primaryLight,
     paddingHorizontal: 16,
-    paddingVertical: 8,
-    borderRadius: 8,
+    paddingVertical: 10,
+    borderRadius: 12,
+    borderWidth: 1,
+    borderColor: Colors.primaryLight,
   },
   profileButtonText: {
-    fontFamily: 'Poppins-Medium',
+    fontFamily: 'Poppins-SemiBold',
     fontSize: 14,
     color: Colors.primary,
   },
   section: {
     marginTop: 24,
-    paddingHorizontal: 20,
+    paddingHorizontal: 24,
   },
   sectionTitle: {
     fontFamily: 'Poppins-SemiBold',
     fontSize: 16,
     color: Colors.textSecondary,
-    marginBottom: 12,
+    marginBottom: 16,
   },
   menuContainer: {
     backgroundColor: 'white',
-    borderRadius: 12,
+    borderRadius: 16,
     overflow: 'hidden',
-    shadowColor: '#000',
-    shadowOffset: { width: 0, height: 2 },
-    shadowOpacity: 0.05,
-    shadowRadius: 8,
     elevation: 2,
   },
   menuItem: {
     flexDirection: 'row',
     alignItems: 'center',
     justifyContent: 'space-between',
-    padding: 16,
+    padding: 18,
     borderBottomWidth: 1,
     borderBottomColor: Colors.border,
   },
@@ -186,26 +309,32 @@ const styles = StyleSheet.create({
     alignItems: 'center',
   },
   menuItemIcon: {
-    width: 36,
-    height: 36,
-    borderRadius: 18,
-    backgroundColor: Colors.primaryLight,
+    width: 40,
+    height: 40,
+    borderRadius: 20,
+    backgroundColor: Colors.primaryLight + '20',
     justifyContent: 'center',
     alignItems: 'center',
-    marginRight: 12,
+    marginRight: 16,
   },
   menuItemTitle: {
     fontFamily: 'Poppins-Medium',
-    fontSize: 15,
+    fontSize: 16,
     color: Colors.textPrimary,
   },
   signOutButton: {
     marginTop: 32,
-    marginHorizontal: 20,
+    marginHorizontal: 24,
     backgroundColor: '#FEE2E2',
-    padding: 16,
-    borderRadius: 12,
+    padding: 18,
+    borderRadius: 16,
     alignItems: 'center',
+    flexDirection: 'row',
+    justifyContent: 'center',
+    elevation: 2,
+  },
+  signOutIcon: {
+    marginRight: 10,
   },
   signOutText: {
     fontFamily: 'Poppins-SemiBold',
@@ -214,8 +343,8 @@ const styles = StyleSheet.create({
   },
   footer: {
     alignItems: 'center',
-    marginTop: 24,
-    marginBottom: 40,
+    marginTop: 32,
+    marginBottom: 20,
   },
   version: {
     fontFamily: 'Poppins-Regular',
